@@ -12,8 +12,8 @@ iris = load_iris()
 X = iris.data
 y = iris.target
 
-# Treinar o modelo de árvore de decisão
-clf = DecisionTreeClassifier()
+# Treinar o modelo de árvore de decisão com os melhores parâmetros
+clf = DecisionTreeClassifier(max_depth=20, min_samples_leaf=5, min_samples_split=2)
 clf.fit(X, y)
 
 # Modelo de dados para previsão
