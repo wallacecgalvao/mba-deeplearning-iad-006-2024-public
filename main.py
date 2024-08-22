@@ -1,38 +1,30 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
-from sklearn.datasets import load_iris
-from sklearn.tree import DecisionTreeClassifier
+import xgboost as xgb
 import numpy as np
-
-# Criação da aplicação FastAPI
+from pydantic import BaseModel
+from sklearn.datasets import fetch_openml
+from sklearn.model_selection import train_test_split
+"""
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port
+"""        
 app = FastAPI()
 
-# Carregar o dataset Iris como exemplo
-iris = load_iris()
-X = iris.data
-y = iris.target
+# Carregar o modelo (assumindo que você já treinou e salvou o modelo)
+model = xgb.XGBClassifier()
+model.load_model("xgboost_mnist_8x8.json")
 
-# Treinar o modelo de árvore de decisão com os melhores parâmetros
-clf = DecisionTreeClassifier(max_depth=20, min_samples_leaf=5, min_samples_split=2)
-clf.fit(X, y)
-
-# Modelo de dados para previsão
-class PredictionInput(BaseModel):
+# Classe para os dados de entrada
+class DataInput(BaseModel):
     data: list
 
-# Rota para verificação do status do servidor
+@app.post("/predict")
+def predict(input_data: DataInput):
+    data = np.array(input_data.data).reshape(1, -1)
+    prediction = model.predict(data)
+    return {"prediction": int(prediction[0])}
+
 @app.get("/")
 def read_root():
-    return {"message": "API is running"}
-
-# Rota para realizar previsões com o modelo
-@app.post("/predict/")
-def predict(input: PredictionInput):
-    # Transformar a entrada em um numpy array
-    input_data = np.array(input.data).reshape(1, -1)
-    
-    # Realizar a previsão
-    prediction = clf.predict(input_data)
-    
-    # Retornar a classe prevista
-    return {"prediction": int(prediction[0])}
+    return {"message": "XGBoost MNIST model is ready for predictions!"}

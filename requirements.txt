@@ -5,3 +5,5 @@ xgboost
 matplotlib
 Flask
 numpy
+xgboost
+pandas
