@@ -1,29 +1,37 @@
 from flask import Flask, request, jsonify
-from sklearn.datasets import load_iris
-from sklearn.tree import DecisionTreeClassifier
+import xgboost as xgb
 import numpy as np
+from PIL import Image
+import io
 
 app = Flask(__name__)
 
-# Carregar o dataset Iris como exemplo
-iris = load_iris()
-X = iris.data
-y = iris.target
+# Carregar o modelo treinado
+model = xgb.XGBClassifier()
+model.load_model("xgboost_mnist_8x8.json")
 
-# Treinar o modelo de árvore de decisão com os melhores parâmetros
-clf = DecisionTreeClassifier(max_depth=20, min_samples_leaf=5, min_samples_split=2)
-clf.fit(X, y)
-
-@app.route('/')
-def home():
-    return "API is running using Flask!"
+# Função para processar a imagem e realizar a previsão
+def process_image(image_data):
+    image = Image.open(io.BytesIO(image_data)).convert('L')  # Converte para escala de cinza
+    image = image.resize((8, 8))  # Garante que a imagem seja de 8x8 pixels
+    image_array = np.array(image).flatten().astype('float32')  # Flatten para um vetor 1D
+    image_array = image_array.reshape(1, -1)  # Redimensiona para o formato esperado pelo modelo
+    return image_array
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    data = request.json['data']
-    input_data = np.array(data).reshape(1, -1)
-    prediction = clf.predict(input_data)
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image uploaded'}), 400
+    
+    image_file = request.files['image'].read()
+    image_data = process_image(image_file)
+    prediction = model.predict(image_data)
+    
     return jsonify({'prediction': int(prediction[0])})
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000)
+@app.route('/')
+def home():
+    return "XGBoost MNIST 8x8 Model API"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8000)
